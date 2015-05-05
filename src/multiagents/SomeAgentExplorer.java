@@ -12,6 +12,7 @@ import eis.iilang.Action;
 import eis.iilang.Percept;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Vector;
 import massim.javaagents.agents.MarsUtil;
@@ -22,8 +23,11 @@ import massim.javaagents.agents.MarsUtil;
  */
 public class SomeAgentExplorer extends massim.javaagents.Agent {
 
+    HashMap<String, String> probedVerticesValues;
+
     public SomeAgentExplorer(String name, String team) {
         super(name, team);
+        probedVerticesValues = new HashMap<String, String>();
     }
 
     @Override
@@ -217,16 +221,17 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
             } else {
                 println("recharging AtAlmostFullCharge...");
                 return MarsUtil.rechargeAction();
-            }            
+            }
         } else {
             if (energy < maxEnergy / 3) {
                 println("I need to recharge");
-                int flipACoin = (int)Math.floor(Math.random() * 2);
-                
-                if(flipACoin == 1)
+                int flipACoin = (int) Math.floor(Math.random() * 2);
+
+                if (flipACoin == 1) {
                     goals.add(new LogicGoal("beAtFullCharge"));
-                else
+                } else {
                     goals.add(new LogicGoal("beAtAlmostFullCharge"));
+                }
                 return MarsUtil.rechargeAction();
             }
         }
@@ -251,6 +256,7 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
         LinkedList<LogicBelief> vertices = getAllBeliefs("probedVertex");
         for (LogicBelief v : vertices) {
             if (v.getParameters().get(0).equals(position)) {
+                probedVerticesValues.put(v.getParameters().get(0), v.getParameters().get(1));
                 probed = true;
                 break;
             }
@@ -281,8 +287,28 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
         }
         if (unprobed.size() != 0) {
             println("some of my neighbors are unprobed.");
-            Collections.shuffle(unprobed);
+            int flipACoin = (int) Math.floor(Math.random() * 2);
             String neighbor = unprobed.firstElement();
+
+            if (flipACoin == 1) {
+                println("I will shuffle");
+                Collections.shuffle(unprobed);
+                neighbor = unprobed.firstElement();
+            } else {
+                println("I will check the biggest value if any");
+                int maxValue = -1;
+                for (String v : unprobed) {
+                    String currentValue = probedVerticesValues.get(v);
+                    if (currentValue != null) {
+                        if (Integer.parseInt(currentValue) > maxValue) {                            
+                            maxValue = Integer.parseInt(currentValue);
+                            println("Biggest is " + v + " with " + maxValue);                
+                            neighbor = v;
+                        }
+                    }
+                }
+            }
+
             println("I will go to " + neighbor);
             return MarsUtil.gotoAction(neighbor);
         } else {
