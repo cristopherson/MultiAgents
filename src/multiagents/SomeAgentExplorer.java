@@ -86,10 +86,10 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
                 println("that was new to me");
                 if (predicate.equals("probedVertex") || predicate.equals("surveyedEdge")) {
                     addBelief((LogicBelief) msg.value);
-                    println("I will keep that in mind");
+                    println("I will keep in mind that " + ((LogicBelief) msg.value));
                     continue;
                 }
-                println("but I am not interested in that gibberish");
+                println("but I am not interested in that gibberish " + ((LogicBelief) msg.value));
             }
         }
 
@@ -152,6 +152,7 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
             } else if (p.getName().equals("energy")) {
                 Integer energy = new Integer(p.getParameters().get(0).toString());
                 removeBeliefs("energy");
+                println("my energy is " + energy);
                 addBelief(new LogicBelief("energy", energy.toString()));
             } else if (p.getName().equals("maxEnergy")) {
                 Integer maxEnergy = new Integer(p.getParameters().get(0).toString());
@@ -206,14 +207,26 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
                 println("I can stop recharging. I am at full charge");
                 removeGoals("beAtFullCharge");
             } else {
-                println("recharging...");
+                println("recharging AtFullCharge...");
                 return MarsUtil.rechargeAction();
             }
-        } // go to recharge mode if necessary
-        else {
+        } else if (goals.contains(new LogicGoal("beAtAlmostFullCharge"))) {
+            if (((maxEnergy / 3) * 2) <= energy) {
+                println("I can stop recharging. I have charged what I needed");
+                removeGoals("beAtAlmostFullCharge");
+            } else {
+                println("recharging AtAlmostFullCharge...");
+                return MarsUtil.rechargeAction();
+            }            
+        } else {
             if (energy < maxEnergy / 3) {
                 println("I need to recharge");
-                goals.add(new LogicGoal("beAtFullCharge"));
+                int flipACoin = (int)Math.floor(Math.random() * 2);
+                
+                if(flipACoin == 1)
+                    goals.add(new LogicGoal("beAtFullCharge"));
+                else
+                    goals.add(new LogicGoal("beAtAlmostFullCharge"));
                 return MarsUtil.rechargeAction();
             }
         }
