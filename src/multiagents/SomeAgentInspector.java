@@ -20,15 +20,14 @@ import massim.javaagents.agents.MarsUtil;
  *
  * @author cristopherson
  */
-public class SomeAgentExplorer extends massim.javaagents.Agent {
+public class SomeAgentInspector extends massim.javaagents.Agent {
 
-    public SomeAgentExplorer(String name, String team) {
+    public SomeAgentInspector(String name, String team) {
         super(name, team);
     }
 
     @Override
     public Action step() {
-        //deliberate and return an action
         handleMessages();
         handlePercepts();
 
@@ -40,25 +39,19 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
             return act;
         }
 
-        // 2. buying battery with a certain probability
+        // 2 buying battery
         act = planBuyBattery();
         if (act != null) {
             return act;
         }
 
-        // 3. probing if necessary
-        act = planProbe();
+        // 3. inspecting if necessary
+        act = planInspect();
         if (act != null) {
             return act;
         }
 
-        // 4. surveying if necessary
-        act = planSurvey();
-        if (act != null) {
-            return act;
-        }
-
-        // 5. (almost) random walking
+        // 4. (almost) random walking
         act = planRandomWalk();
         if (act != null) {
             return act;
@@ -77,20 +70,8 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
         // handle messages... believe everything the others say
         Collection<Message> messages = getMessages();
         for (Message msg : messages) {
-
             println(msg.sender + " told me " + msg.value);
-            String predicate = ((LogicBelief) msg.value).getPredicate();
-            if (containsBelief((LogicBelief) msg.value)) {
-                println("I already knew that");
-            } else {
-                println("that was new to me");
-                if (predicate.equals("probedVertex") || predicate.equals("surveyedEdge")) {
-                    addBelief((LogicBelief) msg.value);
-                    println("I will keep that in mind");
-                    continue;
-                }
-                println("but I am not interested in that gibberish");
-            }
+            println("I do not care. I have more important things to do");
         }
 
     }
@@ -98,7 +79,7 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
     private void handlePercepts() {
 
         String position = null;
-        Vector<String> neighbors = new Vector<String>();
+		//Vector<String> neighbors = new Vector<String>();
 
         // check percepts
         Collection<Percept> percepts = getAllPercepts();
@@ -111,33 +92,23 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
             } else if (p.getName().equals("visibleEntity")) {
                 LogicBelief b = MarsUtil.perceptToBelief(p);
                 if (containsBelief(b) == false) {
+                    //println("I perceive an edge I have not known before");
                     addBelief(b);
+                    //broadcastBelief(b);
                 } else {
+                    //println("I already knew " + b);
                 }
             } else if (p.getName().equals("visibleEdge")) {
                 LogicBelief b = MarsUtil.perceptToBelief(p);
                 if (containsBelief(b) == false) {
+                    //println("I perceive an edge I have not known before");
                     addBelief(b);
-                } else {
-                }
-            } else if (p.getName().equals("probedVertex")) {
-                LogicBelief b = MarsUtil.perceptToBelief(p);
-                if (containsBelief(b) == false) {
-                    println("I perceive the value of a vertex that I have not known before");
-                    addBelief(b);
-                    broadcastBelief(b);
+                    //broadcastBelief(b);
                 } else {
                     //println("I already knew " + b);
                 }
-            } else if (p.getName().equals("surveyedEdge")) {
-                LogicBelief b = MarsUtil.perceptToBelief(p);
-                if (containsBelief(b) == false) {
-                    println("I perceive the weight of an edge that I have not known before");
-                    addBelief(b);
-                    broadcastBelief(b);
-                } else {
-                    //println("I already knew " + b);
-                }
+            } else if (p.getName().equals("inspectedEntity")) {
+                println("I have perceived an inspected entity " + p);
             } else if (p.getName().equals("health")) {
                 Integer health = new Integer(p.getParameters().get(0).toString());
                 println("my health is " + health);
@@ -161,8 +132,6 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
                 Integer money = new Integer(p.getParameters().get(0).toString());
                 removeBeliefs("money");
                 addBelief(new LogicBelief("money", money.toString()));
-            } else if (p.getName().equals("achievement")) {
-                println("reached achievement " + p);
             }
         }
 
@@ -222,123 +191,6 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
 
     }
 
-    private Action planProbe() {
-
-        LinkedList<LogicBelief> beliefs = null;
-
-        beliefs = getAllBeliefs("position");
-        if (beliefs.size() == 0) {
-            println("strangely I do not know my position");
-            return MarsUtil.skipAction();
-        }
-        String position = beliefs.getFirst().getParameters().firstElement();
-
-        // probe current position if not known
-        boolean probed = false;
-        LinkedList<LogicBelief> vertices = getAllBeliefs("probedVertex");
-        for (LogicBelief v : vertices) {
-            if (v.getParameters().get(0).equals(position)) {
-                probed = true;
-                break;
-            }
-        }
-        if (probed == false) {
-            println("I do not know the value of my position. I will probe.");
-            return MarsUtil.probeAction();
-        } else {
-            println("I know the value of my position");
-        }
-
-        beliefs = getAllBeliefs("neighbor");
-
-        // get unprobed neighbors
-        Vector<String> unprobed = new Vector<String>();
-        for (LogicBelief n : beliefs) {
-            probed = false;
-            String name = n.getParameters().firstElement();
-            for (LogicBelief v : vertices) {
-                if (v.getParameters().get(0).equals(name)) {
-                    probed = true;
-                    break;
-                }
-            }
-            if (probed == false) {
-                unprobed.add(name);
-            }
-        }
-        if (unprobed.size() != 0) {
-            println("some of my neighbors are unprobed.");
-            Collections.shuffle(unprobed);
-            String neighbor = unprobed.firstElement();
-            println("I will go to " + neighbor);
-            return MarsUtil.gotoAction(neighbor);
-        } else {
-            println("all of my neighbors are probed");
-        }
-
-        return null;
-
-    }
-
-    private Action planSurvey() {
-
-        println("I know " + getAllBeliefs("visibleEdge").size() + " visible edges");
-        println("I know " + getAllBeliefs("surveyedEdge").size() + " surveyed edges");
-
-        // get all neighbors
-        LinkedList<LogicBelief> visible = getAllBeliefs("visibleEdge");
-        LinkedList<LogicBelief> surveyed = getAllBeliefs("surveyedEdge");
-
-        String position = getAllBeliefs("position").get(0).getParameters().firstElement();
-
-        int unsurveyedNum = 0;
-        int adjacentNum = 0;
-
-        for (LogicBelief v : visible) {
-
-            String vVertex0 = v.getParameters().elementAt(0);
-            String vVertex1 = v.getParameters().elementAt(1);
-
-            boolean adjacent = false;
-            if (vVertex0.equals(position) || vVertex1.equals(position)) {
-                adjacent = true;
-            }
-
-            if (adjacent == false) {
-                continue;
-            }
-            adjacentNum++;
-
-            boolean isSurveyed = false;
-            for (LogicBelief s : surveyed) {
-                String sVertex0 = s.getParameters().elementAt(0);
-                String sVertex1 = s.getParameters().elementAt(1);
-                if (sVertex0.equals(vVertex0) && sVertex1.equals(vVertex1)) {
-                    isSurveyed = true;
-                    break;
-                }
-                if (sVertex0.equals(vVertex1) && sVertex1.equals(vVertex0)) {
-                    isSurveyed = true;
-                    break;
-                }
-            }
-            if (isSurveyed == false) {
-                unsurveyedNum++;
-            }
-
-        }
-
-        println("" + unsurveyedNum + " out of " + adjacentNum + " adjacent edges are unsurveyed");
-
-        if (unsurveyedNum > 0) {
-            println("I will survey");
-            return MarsUtil.surveyAction();
-        }
-
-        return null;
-
-    }
-
     /**
      * Buy a battery with a given probability
      *
@@ -362,13 +214,67 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
         println("we do have enough money.");
 
         //double r = Math.random();
-        //if ( r < 1.0 ) {
+        //if ( r > 0.1 ) {
         //	println("I am not going to buy a battery");
         //	return null;
         //}
         println("I am going to buy a battery");
 
         return MarsUtil.buyAction("battery");
+
+    }
+
+    private Action planInspect() {
+
+        LinkedList<LogicBelief> beliefs = null;
+
+        // determine adjacent vertices including the current position
+        Vector<String> vertices = new Vector<String>();
+        beliefs = getAllBeliefs("position");
+        String position = beliefs.getFirst().getParameters().firstElement();
+        vertices.add(position);
+        beliefs = getAllBeliefs("neighbor");
+        for (LogicBelief b : beliefs) {
+            vertices.add(b.getParameters().firstElement());
+        }
+
+        int adjacentNum = 0;
+
+        String myTeam = getTeam();
+
+        LinkedList<LogicBelief> visible = getAllBeliefs("visibleEntity");
+        for (LogicBelief v : visible) {
+
+            String pos = v.getParameters().get(1);
+            String team = v.getParameters().get(2);
+
+            // ignore same team
+            if (myTeam.equals(team)) {
+                continue;
+            }
+
+            // not adjacent
+            if (vertices.contains(pos) == false) {
+                continue;
+            }
+            adjacentNum++;
+
+        }
+
+        if (adjacentNum == 0) {
+            println("there are no opponents to inspect");
+            return null;
+        }
+
+        println("there are " + adjacentNum + " visible opponents that I could inspect");
+
+        if (Math.random() < 0.5) {
+            println("I will inspect");
+            return MarsUtil.inspectAction();
+        }
+
+        println("I won't inspect");
+        return null;
 
     }
 
@@ -392,4 +298,5 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
         return MarsUtil.gotoAction(neighbor);
 
     }
+
 }

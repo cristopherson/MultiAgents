@@ -1,10 +1,11 @@
-package massim.javaagents;
+package multiagents;
 
 import java.io.IOException;
 
 import eis.EILoader;
 import eis.EnvironmentInterfaceStandard;
 import eis.exceptions.ManagementException;
+import massim.javaagents.AgentsInterpreter;
 
 /**
  * This app instantiates an interpreter (loading agents),
