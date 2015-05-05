@@ -300,9 +300,9 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
                 for (String v : unprobed) {
                     String currentValue = probedVerticesValues.get(v);
                     if (currentValue != null) {
-                        if (Integer.parseInt(currentValue) > maxValue) {                            
+                        if (Integer.parseInt(currentValue) > maxValue) {
                             maxValue = Integer.parseInt(currentValue);
-                            println("Biggest is " + v + " with " + maxValue);                
+                            println("Biggest is " + v + " with " + maxValue);
                             neighbor = v;
                         }
                     }
@@ -330,7 +330,6 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
 
         String position = getAllBeliefs("position").get(0).getParameters().firstElement();
 
-        int unsurveyedNum = 0;
         int adjacentNum = 0;
 
         for (LogicBelief v : visible) {
@@ -362,17 +361,13 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
                 }
             }
             if (isSurveyed == false) {
-                unsurveyedNum++;
+                println("I will survey");
+                return MarsUtil.surveyAction();
             }
 
         }
 
-        println("" + unsurveyedNum + " out of " + adjacentNum + " adjacent edges are unsurveyed");
-
-        if (unsurveyedNum > 0) {
-            println("I will survey");
-            return MarsUtil.surveyAction();
-        }
+        println("Found " + adjacentNum + " adjacent edges, all are surveyed");
 
         return null;
 
@@ -400,15 +395,27 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
         }
         println("we do have enough money.");
 
-        //double r = Math.random();
-        //if ( r < 1.0 ) {
-        //	println("I am not going to buy a battery");
-        //	return null;
-        //}
-        println("I am going to buy a battery");
+        int rollDice = (int) Math.floor(Math.random() * 6);
 
-        return MarsUtil.buyAction("battery");
+        if (rollDice > 1) {
+            println("I am going to buy a battery");
 
+            return MarsUtil.buyAction("battery");
+        } else {
+            LinkedList<LogicBelief> healthBeliefs = this.getAllBeliefs("health");
+
+            if (healthBeliefs.size() > 0) {
+                LogicBelief healthBelief = healthBeliefs.get(0);
+                int health = new Integer(healthBelief.getParameters().get(0)).intValue();
+
+                if (health == 1) {
+                    println("I am going to buy a shield");
+                    return MarsUtil.buyAction("shield");
+                }
+            }
+        }
+        println("I'll save it for later");
+        return null;
     }
 
     private Action planRandomWalk() {
