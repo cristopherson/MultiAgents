@@ -45,7 +45,7 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
         }
 
         // 2. buying battery with a certain probability
-        act = planBuyBattery();
+        act = planBuy();
         if (act != null) {
             return act;
         }
@@ -378,7 +378,7 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
      *
      * @return
      */
-    private Action planBuyBattery() {
+    private Action planBuy() {
 
         LinkedList<LogicBelief> beliefs = this.getAllBeliefs("money");
         if (beliefs.size() == 0) {

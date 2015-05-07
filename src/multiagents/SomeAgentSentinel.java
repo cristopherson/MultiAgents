@@ -40,7 +40,7 @@ public class SomeAgentSentinel extends massim.javaagents.Agent {
         }
 
         // 2. buying battery with a certain probability
-        act = planBuyBattery();
+        act = planBuy();
         if (act != null) {
             return act;
         }
@@ -198,14 +198,27 @@ public class SomeAgentSentinel extends massim.javaagents.Agent {
                 println("I can stop recharging. I am at full charge");
                 removeGoals("beAtFullCharge");
             } else {
-                println("recharging...");
+                println("recharging AtFullCharge...");
                 return MarsUtil.rechargeAction();
             }
-        } // go to recharge mode if necessary
-        else {
+        } else if (goals.contains(new LogicGoal("beAtAlmostFullCharge"))) {
+            if (((maxEnergy / 3) * 2) <= energy) {
+                println("I can stop recharging. I have charged what I needed");
+                removeGoals("beAtAlmostFullCharge");
+            } else {
+                println("recharging AtAlmostFullCharge...");
+                return MarsUtil.rechargeAction();
+            }
+        } else {
             if (energy < maxEnergy / 3) {
                 println("I need to recharge");
-                goals.add(new LogicGoal("beAtFullCharge"));
+                int flipACoin = (int) Math.floor(Math.random() * 2);
+
+                if (flipACoin == 1) {
+                    goals.add(new LogicGoal("beAtFullCharge"));
+                } else {
+                    goals.add(new LogicGoal("beAtAlmostFullCharge"));
+                }
                 return MarsUtil.rechargeAction();
             }
         }
@@ -225,7 +238,6 @@ public class SomeAgentSentinel extends massim.javaagents.Agent {
 
         String position = getAllBeliefs("position").get(0).getParameters().firstElement();
 
-        int unsurveyedNum = 0;
         int adjacentNum = 0;
 
         for (LogicBelief v : visible) {
@@ -257,17 +269,13 @@ public class SomeAgentSentinel extends massim.javaagents.Agent {
                 }
             }
             if (isSurveyed == false) {
-                unsurveyedNum++;
+                println("I will survey");
+                return MarsUtil.surveyAction();
             }
 
         }
 
-        println("" + unsurveyedNum + " out of " + adjacentNum + " adjacent edges are unsurveyed");
-
-        if (unsurveyedNum > 0) {
-            println("I will survey");
-            return MarsUtil.surveyAction();
-        }
+        println("Found " + adjacentNum + " adjacent edges, all are surveyed");
 
         return null;
 
@@ -278,7 +286,7 @@ public class SomeAgentSentinel extends massim.javaagents.Agent {
      *
      * @return
      */
-    private Action planBuyBattery() {
+    private Action planBuy() {
 
         LinkedList<LogicBelief> beliefs = this.getAllBeliefs("money");
         if (beliefs.size() == 0) {
@@ -295,10 +303,27 @@ public class SomeAgentSentinel extends massim.javaagents.Agent {
         }
         println("we do have enough money.");
 
-        println("I am going to buy a battery");
+        int rollDice = (int) Math.floor(Math.random() * 6);
 
-        return MarsUtil.buyAction("battery");
+        if (rollDice > 1) {
+            println("I am going to buy a battery");
 
+            return MarsUtil.buyAction("battery");
+        } else {
+            LinkedList<LogicBelief> healthBeliefs = this.getAllBeliefs("health");
+
+            if (healthBeliefs.size() > 0) {
+                LogicBelief healthBelief = healthBeliefs.get(0);
+                int health = new Integer(healthBelief.getParameters().get(0)).intValue();
+
+                if (health == 1) {
+                    println("I am going to buy a shield");
+                    return MarsUtil.buyAction("shield");
+                }
+            }
+        }
+        println("I'll save it for later");
+        return null;
     }
 
     private Action planRandomWalk() {

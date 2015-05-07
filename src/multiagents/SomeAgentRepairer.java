@@ -19,6 +19,7 @@ import massim.javaagents.agents.MarsUtil;
  * @author cristopherson
  */
 public class SomeAgentRepairer extends massim.javaagents.Agent {
+
     private int rechargeSteps = 0;
 
     public SomeAgentRepairer(String name, String team) {
@@ -41,36 +42,37 @@ public class SomeAgentRepairer extends massim.javaagents.Agent {
             }
         }
 
-        if (needyAgents.size() == 0) {
-            println("nothing for me to do");
-            return MarsUtil.rechargeAction();
-        }
-
-        println("some poor souls need my help " + needyAgents);
-
         Collection<Percept> percepts = getAllPercepts();
         String position = null;
-        for (Percept p : percepts) {
-            if (p.getName().equals("lastActionResult") && p.getParameters().get(0).toProlog().equals("failed")) {
-                println("my previous action has failed. recharging...");
-                rechargeSteps = 10;
-                return MarsUtil.skipAction();
-            }
-            if (p.getName().equals("position")) {
-                position = p.getParameters().get(0).toString();
-            }
-        }
 
-        // a needy one on the same vertex
-        for (Percept p : percepts) {
-            if (p.getName().equals("visibleEntity")) {
-                String ePos = p.getParameters().get(1).toString();
-                String eName = p.getParameters().get(0).toString();
-                if (ePos.equals(position) && needyAgents.contains(eName)) {
-                    println("I am going to repair " + eName);
-                    MarsUtil.repairAction(eName);
+        if (needyAgents.size() != 0) {
+            println("some poor souls need my help " + needyAgents);
+
+            for (Percept p : percepts) {
+                if (p.getName().equals("lastActionResult") && p.getParameters().get(0).toProlog().equals("failed")) {
+                    println("my previous action has failed. recharging...");
+                    rechargeSteps = 10;
+                    return MarsUtil.skipAction();
+                }
+                if (p.getName().equals("position")) {
+                    position = p.getParameters().get(0).toString();
                 }
             }
+
+            // a needy one on the same vertex
+            for (Percept p : percepts) {
+                if (p.getName().equals("visibleEntity")) {
+                    String ePos = p.getParameters().get(1).toString();
+                    String eName = p.getParameters().get(0).toString();
+                    if (ePos.equals(position) && needyAgents.contains(eName)) {
+                        println("I am going to repair " + eName);
+                        return MarsUtil.repairAction(eName);
+                    }
+                }
+            }
+
+        } else {
+            println("nothing for me to do");
         }
 
         // maybe on an adjacent vertex?
@@ -87,22 +89,26 @@ public class SomeAgentRepairer extends massim.javaagents.Agent {
                 }
             }
         }
-        for (Percept p : percepts) {
-            if (p.getName().equals("visibleEntity")) {
-                String ePos = p.getParameters().get(1).toString();
-                String eName = p.getParameters().get(0).toString();
-                if (neighbors.contains(ePos) && needyAgents.contains(eName)) {
-                    println("I am going to repair " + eName + ". move to " + ePos + " first.");
-                    MarsUtil.gotoAction(ePos);
-                }
-            }
-        }
 
         // goto neighbors
         if (neighbors.size() == 0) {
             println("Strangely I do not know my neighbors");
-            return MarsUtil.rechargeAction();
+            return MarsUtil.skipAction();
         }
+
+        if (needyAgents.size() != 0) {
+            for (Percept p : percepts) {
+                if (p.getName().equals("visibleEntity")) {
+                    String ePos = p.getParameters().get(1).toString();
+                    String eName = p.getParameters().get(0).toString();
+                    if (neighbors.contains(ePos) && needyAgents.contains(eName)) {
+                        println("I am going to repair " + eName + ". move to " + ePos + " first.");
+                        return MarsUtil.gotoAction(ePos);
+                    }
+                }
+            }
+        }
+
         Collections.shuffle(neighbors);
         String neighbor = neighbors.firstElement();
         println("I will go to " + neighbor);
