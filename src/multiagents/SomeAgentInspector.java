@@ -57,7 +57,7 @@ public class SomeAgentInspector extends massim.javaagents.Agent {
             return act;
         }
 
-        return MarsUtil.skipAction();
+        return MarsUtil.rechargeAction();
     }
 
     @Override
@@ -158,14 +158,14 @@ public class SomeAgentInspector extends massim.javaagents.Agent {
         beliefs = getAllBeliefs("energy");
         if (beliefs.size() == 0) {
             println("strangely I do not know my energy");
-            return MarsUtil.skipAction();
+            return MarsUtil.rechargeAction();
         }
         int energy = new Integer(beliefs.getFirst().getParameters().firstElement()).intValue();
 
         beliefs = getAllBeliefs("maxEnergy");
         if (beliefs.size() == 0) {
             println("strangely I do not know my maxEnergy");
-            return MarsUtil.skipAction();
+            return MarsUtil.rechargeAction();
         }
         int maxEnergy = new Integer(beliefs.getFirst().getParameters().firstElement()).intValue();
 
@@ -288,7 +288,7 @@ public class SomeAgentInspector extends massim.javaagents.Agent {
 
         if (neighbors.size() == 0) {
             println("strangely I do not know any neighbors");
-            return MarsUtil.skipAction();
+            return MarsUtil.rechargeAction();
         }
 
         // goto neighbors

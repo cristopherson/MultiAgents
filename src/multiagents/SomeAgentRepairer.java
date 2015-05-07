@@ -43,7 +43,7 @@ public class SomeAgentRepairer extends massim.javaagents.Agent {
 
         if (needyAgents.size() == 0) {
             println("nothing for me to do");
-            return MarsUtil.skipAction();
+            return MarsUtil.rechargeAction();
         }
 
         println("some poor souls need my help " + needyAgents);
@@ -101,7 +101,7 @@ public class SomeAgentRepairer extends massim.javaagents.Agent {
         // goto neighbors
         if (neighbors.size() == 0) {
             println("Strangely I do not know my neighbors");
-            return MarsUtil.skipAction();
+            return MarsUtil.rechargeAction();
         }
         Collections.shuffle(neighbors);
         String neighbor = neighbors.firstElement();
