@@ -41,7 +41,6 @@ public class SomeAgentSaboteur extends massim.javaagents.Agent {
     private void handlePercepts() {
 
         String position = null;
-        List<String> neighbors = new ArrayList<>();
 
         // check percepts
         Collection<Percept> percepts = getAllPercepts();
