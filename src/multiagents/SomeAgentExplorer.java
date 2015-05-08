@@ -10,11 +10,12 @@ import apltk.interpreter.data.LogicGoal;
 import apltk.interpreter.data.Message;
 import eis.iilang.Action;
 import eis.iilang.Percept;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Vector;
+import java.util.List;
 import massim.javaagents.agents.MarsUtil;
 
 /**
@@ -27,7 +28,7 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
 
     public SomeAgentExplorer(String name, String team) {
         super(name, team);
-        probedVerticesValues = new HashMap<String, String>();
+        probedVerticesValues = new HashMap<>();
     }
 
     @Override
@@ -36,39 +37,8 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
         handleMessages();
         handlePercepts();
 
-        Action act = null;
-
         // 1. recharging
-        act = planRecharge();
-        if (act != null) {
-            return act;
-        }
-
-        // 2. buying battery with a certain probability
-        act = planBuy();
-        if (act != null) {
-            return act;
-        }
-
-        // 3. probing if necessary
-        act = planProbe();
-        if (act != null) {
-            return act;
-        }
-
-        // 4. surveying if necessary
-        act = planSurvey();
-        if (act != null) {
-            return act;
-        }
-
-        // 5. (almost) random walking
-        act = planRandomWalk();
-        if (act != null) {
-            return act;
-        }
-
-        return MarsUtil.rechargeAction();
+        return planRecharge();
     }
 
     @Override
@@ -102,72 +72,79 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
     private void handlePercepts() {
 
         String position = null;
-        Vector<String> neighbors = new Vector<String>();
-
-        // check percepts
         Collection<Percept> percepts = getAllPercepts();
         //if ( gatherSpecimens ) processSpecimens(percepts);
         removeBeliefs("visibleEntity");
         removeBeliefs("visibleEdge");
         for (Percept p : percepts) {
-            if (p.getName().equals("step")) {
-                println(p);
-            } else if (p.getName().equals("visibleEntity")) {
-                LogicBelief b = MarsUtil.perceptToBelief(p);
-                if (containsBelief(b) == false) {
-                    addBelief(b);
-                } else {
+            switch (p.getName()) {
+                case "step":
+                    println(p);
+                    break;
+                case "visibleEntity": {
+                    LogicBelief b = MarsUtil.perceptToBelief(p);
+                    if (containsBelief(b) == false) {
+                        addBelief(b);
+                    }
+                    break;
                 }
-            } else if (p.getName().equals("visibleEdge")) {
-                LogicBelief b = MarsUtil.perceptToBelief(p);
-                if (containsBelief(b) == false) {
-                    addBelief(b);
-                } else {
+                case "visibleEdge": {
+                    LogicBelief b = MarsUtil.perceptToBelief(p);
+                    if (containsBelief(b) == false) {
+                        addBelief(b);
+                    }
+                    break;
                 }
-            } else if (p.getName().equals("probedVertex")) {
-                LogicBelief b = MarsUtil.perceptToBelief(p);
-                if (containsBelief(b) == false) {
-                    println("I perceive the value of a vertex that I have not known before");
-                    addBelief(b);
-                    broadcastBelief(b);
-                } else {
-                    //println("I already knew " + b);
+                case "probedVertex": {
+                    LogicBelief b = MarsUtil.perceptToBelief(p);
+                    if (containsBelief(b) == false) {
+                        println("I perceive the value of a vertex that I have not known before");
+                        addBelief(b);
+                        broadcastBelief(b);
+                    }
+                    break;
                 }
-            } else if (p.getName().equals("surveyedEdge")) {
-                LogicBelief b = MarsUtil.perceptToBelief(p);
-                if (containsBelief(b) == false) {
-                    println("I perceive the weight of an edge that I have not known before");
-                    addBelief(b);
-                    broadcastBelief(b);
-                } else {
-                    //println("I already knew " + b);
+                case "surveyedEdge": {
+                    LogicBelief b = MarsUtil.perceptToBelief(p);
+                    if (containsBelief(b) == false) {
+                        println("I perceive the weight of an edge that I have not known before");
+                        addBelief(b);
+                        broadcastBelief(b);
+                    }
+                    break;
                 }
-            } else if (p.getName().equals("health")) {
-                Integer health = new Integer(p.getParameters().get(0).toString());
-                println("my health is " + health);
-                if (health.intValue() == 0) {
-                    println("my health is zero. asking for help");
-                    broadcastBelief(new LogicBelief("iAmDisabled"));
-                }
-            } else if (p.getName().equals("position")) {
-                position = p.getParameters().get(0).toString();
-                removeBeliefs("position");
-                addBelief(new LogicBelief("position", position));
-            } else if (p.getName().equals("energy")) {
-                Integer energy = new Integer(p.getParameters().get(0).toString());
-                removeBeliefs("energy");
-                println("my energy is " + energy);
-                addBelief(new LogicBelief("energy", energy.toString()));
-            } else if (p.getName().equals("maxEnergy")) {
-                Integer maxEnergy = new Integer(p.getParameters().get(0).toString());
-                removeBeliefs("maxEnergy");
-                addBelief(new LogicBelief("maxEnergy", maxEnergy.toString()));
-            } else if (p.getName().equals("money")) {
-                Integer money = new Integer(p.getParameters().get(0).toString());
-                removeBeliefs("money");
-                addBelief(new LogicBelief("money", money.toString()));
-            } else if (p.getName().equals("achievement")) {
-                println("reached achievement " + p);
+                case "health":
+                    Integer health = new Integer(p.getParameters().get(0).toString());
+                    println("my health is " + health);
+                    if (health.intValue() == 0) {
+                        println("my health is zero. asking for help");
+                        broadcastBelief(new LogicBelief("iAmDisabled"));
+                    }
+                    break;
+                case "position":
+                    position = p.getParameters().get(0).toString();
+                    removeBeliefs("position");
+                    addBelief(new LogicBelief("position", position));
+                    break;
+                case "energy":
+                    Integer energy = new Integer(p.getParameters().get(0).toString());
+                    removeBeliefs("energy");
+                    println("my energy is " + energy);
+                    addBelief(new LogicBelief("energy", energy.toString()));
+                    break;
+                case "maxEnergy":
+                    Integer maxEnergy = new Integer(p.getParameters().get(0).toString());
+                    removeBeliefs("maxEnergy");
+                    addBelief(new LogicBelief("maxEnergy", maxEnergy.toString()));
+                    break;
+                case "money":
+                    Integer money = new Integer(p.getParameters().get(0).toString());
+                    removeBeliefs("money");
+                    addBelief(new LogicBelief("money", money.toString()));
+                    break;
+                case "achievement":
+                    println("reached achievement " + p);
+                    break;
             }
         }
 
@@ -189,21 +166,20 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
 
     private Action planRecharge() {
 
-        LinkedList<LogicBelief> beliefs = null;
+        LinkedList<LogicBelief> myBeliefs = getAllBeliefs("energy");
 
-        beliefs = getAllBeliefs("energy");
-        if (beliefs.size() == 0) {
+        if (myBeliefs.size() == 0) {
             println("strangely I do not know my energy");
             return MarsUtil.rechargeAction();
         }
-        int energy = new Integer(beliefs.getFirst().getParameters().firstElement()).intValue();
+        int energy = new Integer(myBeliefs.getFirst().getParameters().firstElement()).intValue();
 
-        beliefs = getAllBeliefs("maxEnergy");
-        if (beliefs.size() == 0) {
+        myBeliefs = getAllBeliefs("maxEnergy");
+        if (myBeliefs.size() == 0) {
             println("strangely I do not know my maxEnergy");
             return MarsUtil.rechargeAction();
         }
-        int maxEnergy = new Integer(beliefs.getFirst().getParameters().firstElement()).intValue();
+        int maxEnergy = new Integer(myBeliefs.getFirst().getParameters().firstElement()).intValue();
 
         // if has the goal of being recharged...
         if (goals.contains(new LogicGoal("beAtFullCharge"))) {
@@ -236,20 +212,18 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
             }
         }
 
-        return null;
-
+        // 2. buying battery with a certain probability
+        return planBuy();
     }
 
     private Action planProbe() {
+        LinkedList<LogicBelief> myBeliefs = getAllBeliefs("position");
 
-        LinkedList<LogicBelief> beliefs = null;
-
-        beliefs = getAllBeliefs("position");
-        if (beliefs.size() == 0) {
+        if (myBeliefs.size() == 0) {
             println("strangely I do not know my position");
             return MarsUtil.rechargeAction();
         }
-        String position = beliefs.getFirst().getParameters().firstElement();
+        String position = myBeliefs.getFirst().getParameters().firstElement();
 
         // probe current position if not known
         boolean probed = false;
@@ -268,11 +242,10 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
             println("I know the value of my position");
         }
 
-        beliefs = getAllBeliefs("neighbor");
+        myBeliefs = getAllBeliefs("neighbor");
 
-        // get unprobed neighbors
-        Vector<String> unprobed = new Vector<String>();
-        for (LogicBelief n : beliefs) {
+        List<String> unprobed = new ArrayList<>();
+        for (LogicBelief n : myBeliefs) {
             probed = false;
             String name = n.getParameters().firstElement();
             for (LogicBelief v : vertices) {
@@ -285,15 +258,15 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
                 unprobed.add(name);
             }
         }
-        if (unprobed.size() != 0) {
+        if (!unprobed.isEmpty()) {
             println("some of my neighbors are unprobed.");
             int flipACoin = (int) Math.floor(Math.random() * 2);
-            String neighbor = unprobed.firstElement();
+            String neighbor = unprobed.get(0);
 
             if (flipACoin == 1) {
                 println("I will shuffle");
                 Collections.shuffle(unprobed);
-                neighbor = unprobed.firstElement();
+                neighbor = unprobed.get(0);
             } else {
                 println("I will check the biggest value if any");
                 int maxValue = -1;
@@ -315,8 +288,8 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
             println("all of my neighbors are probed");
         }
 
-        return null;
-
+        // 4. surveying if necessary
+        return planSurvey();
     }
 
     private Action planSurvey() {
@@ -369,8 +342,8 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
 
         println("Found " + adjacentNum + " adjacent edges, all are surveyed");
 
-        return null;
-
+        // 5. (almost) random walking
+        return planRandomWalk();
     }
 
     /**
@@ -380,18 +353,20 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
      */
     private Action planBuy() {
 
-        LinkedList<LogicBelief> beliefs = this.getAllBeliefs("money");
-        if (beliefs.size() == 0) {
+        LinkedList<LogicBelief> myBeliefs = this.getAllBeliefs("money");
+        if (myBeliefs.size() == 0) {
             println("strangely I do not know our money.");
-            return null;
+            // 3. probing if necessary
+            return planProbe();
         }
 
-        LogicBelief moneyBelief = beliefs.get(0);
+        LogicBelief moneyBelief = myBeliefs.get(0);
         int money = new Integer(moneyBelief.getParameters().get(0)).intValue();
 
         if (money < 10) {
             println("we do not have enough money.");
-            return null;
+            // 3. probing if necessary
+            return planProbe();
         }
         println("we do have enough money.");
 
@@ -415,27 +390,26 @@ public class SomeAgentExplorer extends massim.javaagents.Agent {
             }
         }
         println("I'll save it for later");
-        return null;
+        // 3. probing if necessary
+        return planProbe();
     }
 
     private Action planRandomWalk() {
 
-        LinkedList<LogicBelief> beliefs = getAllBeliefs("neighbor");
-        Vector<String> neighbors = new Vector<String>();
-        for (LogicBelief b : beliefs) {
+        LinkedList<LogicBelief> myBeliefs = getAllBeliefs("neighbor");
+        List<String> neighbors = new ArrayList<>();
+        for (LogicBelief b : myBeliefs) {
             neighbors.add(b.getParameters().firstElement());
         }
 
-        if (neighbors.size() == 0) {
+        if (!neighbors.isEmpty()) {
             println("strangely I do not know any neighbors");
             return MarsUtil.rechargeAction();
         }
 
-        // goto neighbors
         Collections.shuffle(neighbors);
-        String neighbor = neighbors.firstElement();
+        String neighbor = neighbors.get(0);
         println("I will go to " + neighbor);
         return MarsUtil.gotoAction(neighbor);
-
     }
 }

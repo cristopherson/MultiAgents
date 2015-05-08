@@ -9,9 +9,10 @@ import apltk.interpreter.data.LogicBelief;
 import apltk.interpreter.data.Message;
 import eis.iilang.Action;
 import eis.iilang.Percept;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Vector;
+import java.util.List;
 import massim.javaagents.agents.MarsUtil;
 
 /**
@@ -19,7 +20,6 @@ import massim.javaagents.agents.MarsUtil;
  * @author cristopherson
  */
 public class SomeAgentRepairer extends massim.javaagents.Agent {
-
     private int rechargeSteps = 0;
 
     public SomeAgentRepairer(String name, String team) {
@@ -35,7 +35,7 @@ public class SomeAgentRepairer extends massim.javaagents.Agent {
         }
 
         Collection<Message> messages = getMessages();
-        Vector<String> needyAgents = new Vector<String>();
+        List<String> needyAgents = new ArrayList<>();
         for (Message msg : messages) {
             if (((LogicBelief) msg.value).getPredicate().equals("iAmDisabled")) {
                 needyAgents.add(msg.sender);
@@ -45,7 +45,7 @@ public class SomeAgentRepairer extends massim.javaagents.Agent {
         Collection<Percept> percepts = getAllPercepts();
         String position = null;
 
-        if (needyAgents.size() != 0) {
+        if (!needyAgents.isEmpty()) {
             println("some poor souls need my help " + needyAgents);
 
             for (Percept p : percepts) {
@@ -59,7 +59,6 @@ public class SomeAgentRepairer extends massim.javaagents.Agent {
                 }
             }
 
-            // a needy one on the same vertex
             for (Percept p : percepts) {
                 if (p.getName().equals("visibleEntity")) {
                     String ePos = p.getParameters().get(1).toString();
@@ -75,8 +74,7 @@ public class SomeAgentRepairer extends massim.javaagents.Agent {
             println("nothing for me to do");
         }
 
-        // maybe on an adjacent vertex?
-        Vector<String> neighbors = new Vector<String>();
+        List<String> neighbors = new ArrayList<>();
         for (Percept p : percepts) {
             if (p.getName().equals("visibleEdge")) {
                 String vertex1 = p.getParameters().get(0).toString();
@@ -91,12 +89,12 @@ public class SomeAgentRepairer extends massim.javaagents.Agent {
         }
 
         // goto neighbors
-        if (neighbors.size() == 0) {
+        if (neighbors.isEmpty()) {
             println("Strangely I do not know my neighbors");
             return MarsUtil.skipAction();
         }
 
-        if (needyAgents.size() != 0) {
+        if (!needyAgents.isEmpty()) {
             for (Percept p : percepts) {
                 if (p.getName().equals("visibleEntity")) {
                     String ePos = p.getParameters().get(1).toString();
@@ -110,7 +108,7 @@ public class SomeAgentRepairer extends massim.javaagents.Agent {
         }
 
         Collections.shuffle(neighbors);
-        String neighbor = neighbors.firstElement();
+        String neighbor = neighbors.get(0);
         println("I will go to " + neighbor);
         return MarsUtil.gotoAction(neighbor);
     }
